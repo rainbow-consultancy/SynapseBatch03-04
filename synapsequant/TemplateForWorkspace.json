@@ -1,0 +1,177 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"workspaceName": {
+			"type": "string",
+			"metadata": "Workspace name",
+			"defaultValue": "synapsequant"
+		},
+		"synapsequant-WorkspaceDefaultSqlServer_connectionString": {
+			"type": "secureString",
+			"metadata": "Secure string for 'connectionString' of 'synapsequant-WorkspaceDefaultSqlServer'",
+			"defaultValue": "Integrated Security=False;Encrypt=True;Connection Timeout=30;Data Source=tcp:synapsequant.sql.azuresynapse.net,1433;Initial Catalog=@{linkedService().DBName}"
+		},
+		"synapsequant-WorkspaceDefaultStorage_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "https://rainbowstorageadls.dfs.core.windows.net"
+		}
+	},
+	"variables": {
+		"workspaceId": "[concat('Microsoft.Synapse/workspaces/', parameters('workspaceName'))]"
+	},
+	"resources": [
+		{
+			"name": "[concat(parameters('workspaceName'), '/synapsequant-WorkspaceDefaultSqlServer')]",
+			"type": "Microsoft.Synapse/workspaces/linkedServices",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"parameters": {
+					"DBName": {
+						"type": "String"
+					}
+				},
+				"annotations": [],
+				"type": "AzureSqlDW",
+				"typeProperties": {
+					"connectionString": "[parameters('synapsequant-WorkspaceDefaultSqlServer_connectionString')]"
+				},
+				"connectVia": {
+					"referenceName": "AutoResolveIntegrationRuntime",
+					"type": "IntegrationRuntimeReference"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/integrationRuntimes/AutoResolveIntegrationRuntime')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/synapsequant-WorkspaceDefaultStorage')]",
+			"type": "Microsoft.Synapse/workspaces/linkedServices",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"annotations": [],
+				"type": "AzureBlobFS",
+				"typeProperties": {
+					"url": "[parameters('synapsequant-WorkspaceDefaultStorage_properties_typeProperties_url')]"
+				},
+				"connectVia": {
+					"referenceName": "AutoResolveIntegrationRuntime",
+					"type": "IntegrationRuntimeReference"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/integrationRuntimes/AutoResolveIntegrationRuntime')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/AutoResolveIntegrationRuntime')]",
+			"type": "Microsoft.Synapse/workspaces/integrationRuntimes",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"type": "Managed",
+				"typeProperties": {
+					"computeProperties": {
+						"location": "AutoResolve",
+						"dataFlowProperties": {
+							"computeType": "General",
+							"coreCount": 8,
+							"timeToLive": 0
+						}
+					}
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/WorkspaceSystemIdentity')]",
+			"type": "Microsoft.Synapse/workspaces/credentials",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"type": "ManagedIdentity",
+				"typeProperties": {}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/CETAS')]",
+			"type": "Microsoft.Synapse/workspaces/sqlscripts",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"content": {
+					"query": "-- CETAS (Create External Table As Select)\n\nselect top(10) * from dbo.GaintPeople;\n-- CETAS (Create External Table As Select)\n\nselect top(10) * from dbo.GaintPeople;\n\n\nCREATE EXTERNAL TABLE dbo.GaintPeopleAsiaParquet\nWITH (\n    LOCATION = 'Processed/AsiaParquet/',\n    DATA_SOURCE = [synapse-container_rainbowstorageadls_dfs_core_windows_net],\n    FILE_FORMAT = SynapseParquetFormat\n)\nAS\nSELECT * FROM dbo.GaintPeople WHERE continent = 'Asia';\n\n\nSELECT * FROM dbo.GaintPeopleAsia;\n\n\n",
+					"metadata": {
+						"language": "sql"
+					},
+					"currentConnection": {
+						"databaseName": "quant_db",
+						"poolName": "Built-in"
+					},
+					"resultLimit": -1
+				},
+				"type": "SqlQuery"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/SQL Create External Parquet Table')]",
+			"type": "Microsoft.Synapse/workspaces/sqlscripts",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"content": {
+					"query": "IF NOT EXISTS (SELECT * FROM sys.external_file_formats WHERE name = 'SynapseParquetFormat') \n\tCREATE EXTERNAL FILE FORMAT [SynapseParquetFormat] \n\tWITH ( FORMAT_TYPE = PARQUET)\nGO\n\nIF NOT EXISTS (SELECT * FROM sys.external_data_sources WHERE name = 'synapse-container_rainbowstorageadls_dfs_core_windows_net') \n\tCREATE EXTERNAL DATA SOURCE [synapse-container_rainbowstorageadls_dfs_core_windows_net] \n\tWITH (\n\t\tLOCATION = 'abfss://synapse-container@rainbowstorageadls.dfs.core.windows.net' \n\t)\nGO\n\nCREATE EXTERNAL TABLE dbo.iris (\n\t[sepal.length] float,\n\t[sepal.width] float,\n\t[petal.length] float,\n\t[petal.width] float,\n\t[variety] nvarchar(4000)\n\t)\n\tWITH (\n\tLOCATION = 'iris.parquet',\n\tDATA_SOURCE = [synapse-container_rainbowstorageadls_dfs_core_windows_net],\n\tFILE_FORMAT = [SynapseParquetFormat]\n\t)\nGO\n\n\nSELECT TOP 100 * FROM dbo.iris\nGO",
+					"metadata": {
+						"language": "sql"
+					},
+					"currentConnection": {
+						"databaseName": "quant_db",
+						"poolName": "Built-in"
+					},
+					"resultLimit": -1
+				},
+				"type": "SqlQuery"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/SQL Create External Table')]",
+			"type": "Microsoft.Synapse/workspaces/sqlscripts",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"content": {
+					"query": "IF NOT EXISTS (SELECT * FROM sys.external_file_formats WHERE name = 'SynapseDelimitedTextFormat') \n\tCREATE EXTERNAL FILE FORMAT [SynapseDelimitedTextFormat] \n\tWITH ( FORMAT_TYPE = DELIMITEDTEXT ,\n\t       FORMAT_OPTIONS (\n\t\t\t FIELD_TERMINATOR = ',',\n\t\t\t FIRST_ROW = 11,\n\t\t\t USE_TYPE_DEFAULT = FALSE\n\t\t\t))\nGO\n\nIF NOT EXISTS (SELECT * FROM sys.external_data_sources WHERE name = 'synapse-container_rainbowstorageadls_dfs_core_windows_net') \n\tCREATE EXTERNAL DATA SOURCE [synapse-container_rainbowstorageadls_dfs_core_windows_net] \n\tWITH (\n\t\tLOCATION = 'abfss://synapse-container@rainbowstorageadls.dfs.core.windows.net' \n\t)\nGO\n\nDrop EXTERNAL TABLE dbo.GiantPeople;\n\nCREATE EXTERNAL TABLE dbo.GaintPeople (\n\t[id] bigint,\n\t[name] nvarchar(4000),\n\t[gender] nvarchar(4000),\n\t[country] nvarchar(4000),\n\t[continent] nvarchar(4000),\n\t[height_cm] bigint,\n\t[height_ft_in] nvarchar(4000),\n\t[weight_kg] bigint,\n\t[birth_year] bigint,\n\t[death_year] bigint,\n\t[lifespan] bigint,\n\t[occupation] nvarchar(4000),\n\t[medical_condition] nvarchar(4000),\n\t[is_alive] bigint\n\t)\n\tWITH (\n\tLOCATION = 'tallest_people_in_the_world.csv',\n\tDATA_SOURCE = [synapse-container_rainbowstorageadls_dfs_core_windows_net],\n\tFILE_FORMAT = [SynapseDelimitedTextFormat]\n\t)\nGO\n\n\nSELECT TOP 100 * FROM dbo.GaintPeople\nGO",
+					"metadata": {
+						"language": "sql"
+					},
+					"currentConnection": {
+						"databaseName": "quant_db",
+						"poolName": "Built-in"
+					},
+					"resultLimit": -1
+				},
+				"type": "SqlQuery"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/SQL OpenRowSet')]",
+			"type": "Microsoft.Synapse/workspaces/sqlscripts",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"content": {
+					"query": "-- SELECT *\n-- FROM OPENROWSET(\n--     BULK 'https://rainbowstorageadls.dfs.core.windows.net/synapse-container/tallest_people_in_the_world.csv',\n--     FORMAT = 'CSV',\n--     PARSER_VERSION = '2.0',\n--     FIRSTROW = 2\n-- )\n-- WITH (\n--     [id] BIGINT,\n--     [name] NVARCHAR(4000),\n--     [gender] NVARCHAR(50),\n--     [country] NVARCHAR(100),\n--     [continent] NVARCHAR(100),\n--     [height_cm] BIGINT,\n--     [height_ft_in] NVARCHAR(50),\n--     [weight_kg] BIGINT,\n--     [birth_year] BIGINT,\n--     [death_year] BIGINT,\n--     [lifespan] BIGINT,\n--     [occupation] NVARCHAR(200),\n--     [medical_condition] NVARCHAR(200),\n--     [is_alive] NVARCHAR(10)   -- FIXED\n-- ) AS [result];\n\n\nSELECT *\nFROM OPENROWSET(\n    BULK 'https://rainbowstorageadls.dfs.core.windows.net/synapse-container/tallest_people_in_the_world.csv',\n    FORMAT = 'CSV',\n    HEADER_ROW = TRUE,\n    PARSER_VERSION = '2.0'\n) as [result];\n\n\n",
+					"metadata": {
+						"language": "sql"
+					},
+					"currentConnection": {
+						"databaseName": "quant_db",
+						"poolName": "Built-in"
+					},
+					"resultLimit": 5000
+				},
+				"type": "SqlQuery"
+			},
+			"dependsOn": []
+		}
+	]
+}
