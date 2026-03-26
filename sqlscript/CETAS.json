@@ -1,0 +1,17 @@
+{
+	"name": "CETAS",
+	"properties": {
+		"content": {
+			"query": "-- CETAS (Create External Table As Select)\n\nselect top(10) * from dbo.GaintPeople;\n-- CETAS (Create External Table As Select)\n\nselect top(10) * from dbo.GaintPeople;\n\n\nCREATE EXTERNAL TABLE dbo.GaintPeopleAsiaParquet\nWITH (\n    LOCATION = 'Processed/AsiaParquet/',\n    DATA_SOURCE = [synapse-container_rainbowstorageadls_dfs_core_windows_net],\n    FILE_FORMAT = SynapseParquetFormat\n)\nAS\nSELECT * FROM dbo.GaintPeople WHERE continent = 'Asia';\n\n\nSELECT * FROM dbo.GaintPeopleAsia;\n\n\n",
+			"metadata": {
+				"language": "sql"
+			},
+			"currentConnection": {
+				"databaseName": "quant_db",
+				"poolName": "Built-in"
+			},
+			"resultLimit": -1
+		},
+		"type": "SqlQuery"
+	}
+}
