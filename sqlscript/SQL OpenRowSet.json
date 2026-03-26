@@ -1,0 +1,17 @@
+{
+	"name": "SQL OpenRowSet",
+	"properties": {
+		"content": {
+			"query": "-- SELECT *\n-- FROM OPENROWSET(\n--     BULK 'https://rainbowstorageadls.dfs.core.windows.net/synapse-container/tallest_people_in_the_world.csv',\n--     FORMAT = 'CSV',\n--     PARSER_VERSION = '2.0',\n--     FIRSTROW = 2\n-- )\n-- WITH (\n--     [id] BIGINT,\n--     [name] NVARCHAR(4000),\n--     [gender] NVARCHAR(50),\n--     [country] NVARCHAR(100),\n--     [continent] NVARCHAR(100),\n--     [height_cm] BIGINT,\n--     [height_ft_in] NVARCHAR(50),\n--     [weight_kg] BIGINT,\n--     [birth_year] BIGINT,\n--     [death_year] BIGINT,\n--     [lifespan] BIGINT,\n--     [occupation] NVARCHAR(200),\n--     [medical_condition] NVARCHAR(200),\n--     [is_alive] NVARCHAR(10)   -- FIXED\n-- ) AS [result];\n\n\nSELECT *\nFROM OPENROWSET(\n    BULK 'https://rainbowstorageadls.dfs.core.windows.net/synapse-container/tallest_people_in_the_world.csv',\n    FORMAT = 'CSV',\n    HEADER_ROW = TRUE,\n    PARSER_VERSION = '2.0'\n) as [result];\n\n\n",
+			"metadata": {
+				"language": "sql"
+			},
+			"currentConnection": {
+				"databaseName": "quant_db",
+				"poolName": "Built-in"
+			},
+			"resultLimit": 5000
+		},
+		"type": "SqlQuery"
+	}
+}
