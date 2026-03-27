@@ -172,6 +172,26 @@
 				"type": "SqlQuery"
 			},
 			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/SQL Openrowset extended')]",
+			"type": "Microsoft.Synapse/workspaces/sqlscripts",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"content": {
+					"query": "\n-- Openrowset Extended\n\nSELECT COUNTRY, ROUND(SUM(REVENUE_USD), 2) AS TOTAL_REVENUE\nFROM OPENROWSET(\n    BULK 'https://rainbowstorageadls.dfs.core.windows.net/synapse-container/apple_global_sales_dataset.csv',\n    FORMAT = 'CSV',\n    HEADER_ROW = TRUE,\n    PARSER_VERSION = '2.0'\n) AS [RESULT]\nGROUP BY COUNTRY\nORDER BY COUNTRY ASC;\n\n\nCREATE VIEW APPLE_REVENUE AS \nSELECT COUNTRY, ROUND(SUM(REVENUE_USD), 2) AS TOTAL_REVENUE\nFROM OPENROWSET(\n    BULK 'https://rainbowstorageadls.dfs.core.windows.net/synapse-container/apple_global_sales_dataset.csv',\n    FORMAT = 'CSV',\n    HEADER_ROW = TRUE,\n    PARSER_VERSION = '2.0'\n) AS [RESULT]\nGROUP BY COUNTRY;\n\n\nSELECT * FROM APPLE_REVENUE;\n\n\nCREATE VIEW APPLE_REVENUE_TOP_10 AS \nWITH TOP_RANKED AS (\nSELECT \nCOUNTRY, \nROUND(SUM(REVENUE_USD), 2) AS TOTAL_REVENUE,\nROW_NUMBER() OVER (ORDER BY SUM(REVENUE_USD) DESC) AS RN\nFROM OPENROWSET(\n    BULK 'https://rainbowstorageadls.dfs.core.windows.net/synapse-container/apple_global_sales_dataset.csv',\n    FORMAT = 'CSV',\n    HEADER_ROW = TRUE,\n    PARSER_VERSION = '2.0'\n) AS [RESULT]\nGROUP BY COUNTRY\n)\nSELECT \nCOUNTRY, \nTOTAL_REVENUE\nFROM TOP_RANKED\nWHERE RN < 11;\n\nSELECT * FROM APPLE_REVENUE_TOP_10;\n\n\nCREATE VIEW PLAYER_CLUBS AS\nSELECT \nPLAYER.PLAYER_ID,\nPLAYER.[NAME] AS PLAYER_NAME,\nPLAYER.country_of_birth,\nPLAYER.country_of_citizenship,\nCLUB.*\nFROM OPENROWSET(\n    BULK 'https://rainbowstorageadls.dfs.core.windows.net/synapse-container/players.csv',\n    FORMAT = 'CSV',\n    HEADER_ROW = TRUE,\n    PARSER_VERSION = '2.0'\n) AS PLAYER\nINNER JOIN OPENROWSET(\n    BULK 'https://rainbowstorageadls.dfs.core.windows.net/synapse-container/clubs.csv',\n    FORMAT = 'CSV',\n    HEADER_ROW = TRUE,\n    PARSER_VERSION = '2.0'\n) AS CLUB\nON PLAYER.current_club_id = CLUB.club_id;\n\n\nSELECT * FROM PLAYER_CLUBS;\n",
+					"metadata": {
+						"language": "sql"
+					},
+					"currentConnection": {
+						"databaseName": "quant_db",
+						"poolName": "Built-in"
+					},
+					"resultLimit": 5000
+				},
+				"type": "SqlQuery"
+			},
+			"dependsOn": []
 		}
 	]
 }
