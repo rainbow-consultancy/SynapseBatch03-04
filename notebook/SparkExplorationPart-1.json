@@ -1,0 +1,105 @@
+{
+	"name": "SparkExplorationPart-1",
+	"properties": {
+		"nbformat": 4,
+		"nbformat_minor": 2,
+		"bigDataPool": {
+			"referenceName": "QuantComputer",
+			"type": "BigDataPoolReference"
+		},
+		"sessionProperties": {
+			"driverMemory": "28g",
+			"driverCores": 4,
+			"executorMemory": "28g",
+			"executorCores": 4,
+			"numExecutors": 1,
+			"runAsWorkspaceSystemIdentity": false,
+			"conf": {
+				"spark.dynamicAllocation.enabled": "true",
+				"spark.dynamicAllocation.minExecutors": "1",
+				"spark.dynamicAllocation.maxExecutors": "1",
+				"spark.autotune.trackingId": "59d7dba1-6c5b-4c8d-9081-8b78e17e3b1c"
+			}
+		},
+		"metadata": {
+			"saveOutput": true,
+			"enableDebugMode": false,
+			"kernelspec": {
+				"name": "synapse_pyspark",
+				"display_name": "Synapse PySpark"
+			},
+			"language_info": {
+				"name": "python"
+			},
+			"a365ComputeOptions": {
+				"id": "/subscriptions/55a823ff-3572-4afe-84f3-2631597109ef/resourceGroups/rg_rainbow/providers/Microsoft.Synapse/workspaces/synapsequant/bigDataPools/QuantComputer",
+				"name": "QuantComputer",
+				"type": "Spark",
+				"endpoint": "https://synapsequant.dev.azuresynapse.net/livyApi/versions/2019-11-01-preview/sparkPools/QuantComputer",
+				"auth": {
+					"type": "AAD",
+					"authResource": "https://dev.azuresynapse.net"
+				},
+				"sparkVersion": "3.5",
+				"nodeCount": 10,
+				"cores": 4,
+				"memory": 28,
+				"automaticScaleJobs": false
+			},
+			"sessionKeepAliveTimeout": 10
+		},
+		"cells": [
+			{
+				"cell_type": "code",
+				"source": [
+					"print(\"Hello Synapse!\")"
+				],
+				"execution_count": 1
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"from pyspark.sql import functions as F"
+				],
+				"execution_count": 3
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"collapsed": false
+				},
+				"source": [
+					"adls_path = \"abfss://synapse-container@rainbowstorageadls.dfs.core.windows.net/apple_global_sales_dataset.csv\"\n",
+					"\n",
+					"sales_df = (\n",
+					"    spark.read.format(\"csv\")\n",
+					"    .option(\"header\", True)\n",
+					"    .option(\"inferSchema\", True)\n",
+					"    .load(adls_path)\n",
+					")\n",
+					"\n",
+					"# display(sales_df)"
+				],
+				"execution_count": 2
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"collapsed": false
+				},
+				"source": [
+					"sales_q4 = sales_df.filter(F.col(\"quarter\") == \"Q4\")\n",
+					"# display(sales_q4)"
+				],
+				"execution_count": 5
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"sales_q4.write.format(\"parquet\").save(\"/notebook/salesQ4\")"
+				],
+				"execution_count": 6
+			}
+		]
+	}
+}
