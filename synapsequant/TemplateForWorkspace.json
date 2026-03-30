@@ -22,22 +22,13 @@
 	},
 	"resources": [
 		{
-			"name": "[concat(parameters('workspaceName'), '/QuantComputer')]",
-			"type": "Microsoft.Synapse/workspaces/bigDataPools",
-			"apiVersion": "2019-06-01-preview",
-			"properties": {
-				"annotations": []
-			},
-			"dependsOn": []
-		},
-		{
 			"name": "[concat(parameters('workspaceName'), '/SynapseNotebookPart1')]",
 			"type": "Microsoft.Synapse/workspaces/pipelines",
 			"apiVersion": "2019-06-01-preview",
 			"properties": {
 				"activities": [
 					{
-						"name": "NotebookToMoveSalesData",
+						"name": "Spark Pool Test",
 						"type": "SynapseNotebook",
 						"dependsOn": [],
 						"policy": {
@@ -54,18 +45,7 @@
 								"type": "NotebookReference"
 							},
 							"snapshot": true,
-							"sparkPool": {
-								"referenceName": "QuantComputer",
-								"type": "BigDataPoolReference"
-							},
-							"executorSize": "Small",
-							"conf": {
-								"spark.dynamicAllocation.enabled": true,
-								"spark.dynamicAllocation.minExecutors": 1,
-								"spark.dynamicAllocation.maxExecutors": 1
-							},
-							"driverSize": "Small",
-							"numExecutors": 1
+							"conf": {}
 						}
 					}
 				],
@@ -75,8 +55,7 @@
 				"annotations": []
 			},
 			"dependsOn": [
-				"[concat(variables('workspaceId'), '/notebooks/SparkExplorationPart-1')]",
-				"[concat(variables('workspaceId'), '/bigDataPools/QuantComputer')]"
+				"[concat(variables('workspaceId'), '/notebooks/SparkExplorationPart-1')]"
 			]
 		},
 		{
@@ -370,7 +349,7 @@
 			"properties": {
 				"autoPause": {
 					"enabled": true,
-					"delayInMinutes": 15
+					"delayInMinutes": 10
 				},
 				"autoScale": {
 					"enabled": true,
