@@ -3,7 +3,7 @@
 	"properties": {
 		"activities": [
 			{
-				"name": "NotebookToMoveSalesData",
+				"name": "Spark Pool Test",
 				"type": "SynapseNotebook",
 				"dependsOn": [],
 				"policy": {
@@ -19,19 +19,7 @@
 						"referenceName": "SparkExplorationPart-1",
 						"type": "NotebookReference"
 					},
-					"snapshot": true,
-					"sparkPool": {
-						"referenceName": "QuantComputer",
-						"type": "BigDataPoolReference"
-					},
-					"executorSize": "Small",
-					"conf": {
-						"spark.dynamicAllocation.enabled": true,
-						"spark.dynamicAllocation.minExecutors": 1,
-						"spark.dynamicAllocation.maxExecutors": 1
-					},
-					"driverSize": "Small",
-					"numExecutors": 1
+					"snapshot": true
 				}
 			}
 		],
